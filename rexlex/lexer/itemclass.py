@@ -1,7 +1,7 @@
 from operator import itemgetter
 from collections import OrderedDict
 
-from tater.utils import CachedAttr
+from hercules import CachedAttr
 
 
 class _ItemBase(tuple):
