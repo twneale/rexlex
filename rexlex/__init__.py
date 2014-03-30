@@ -22,11 +22,10 @@ __all__ = [
 
 
 # rexlex imports.
-from rexlex.lexer import Lexer
-from rexlex.tokentype import Token
+from rexlex.lexer.lexer import Lexer
+from rexlex.lexer.tokentype import Token
 from rexlex.lexer.utils import include, bygroups, rule
 from rexlex.lexer.exceptions import IncompleteLex
-
 
 
 # Configure logging.
