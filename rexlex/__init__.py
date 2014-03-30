@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Pythonic parsing framework"""
+"""Basic regex lexer implementation"""
 # :copyright: (c) 2009 - 2012 Thom Neale and individual contributors,
 #                 All rights reserved.
 # :license:   BSD (3 Clause), see LICENSE for more details.
