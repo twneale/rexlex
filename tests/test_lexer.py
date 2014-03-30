@@ -1,25 +1,27 @@
 import re
 import unittest
 
-from rexlex import Lexer, Rule as r
+from rexlex import Lexer
 from rexlex.lexer.itemclass import get_itemclass
 
 
 class TestableLexer(Lexer):
     """Test tuple state transitions including #pop."""
-    # DEBUG = logging.DEBUG
+
+    LOGLEVEL = None
+
     re_skip = re.compile('\s+')
     tokendefs = {
         'root': [
-            r('Root', 'a', push='bar'),
-            r('Root', 'e'),
+            ('Root', 'a', 'bar'),
+            ('Root', 'e'),
         ],
         'foo': [
-            r('Foo', 'd', pop=2),
+            ('Foo', 'd'),
         ],
         'bar': [
-            r('Bar', 'b', push='bar'),
-            r('Bar', 'c', swap='foo'),
+            ('Bar', 'b', 'bar'),
+            ('Bar', 'c', 'foo'),
         ],
     }
 

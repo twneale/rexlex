@@ -24,11 +24,21 @@ __all__ = [
 # Configure logging.
 logging.config.dictConfig(config.LOGGING_CONFIG)
 
-# rexlex imports.
+# Import cumstom log levels.
+from rexlex.log_config import (
+    REXLEX_TRACE_RESULT,
+    REXLEX_TRACE_META,
+    REXLEX_TRACE_STATE,
+    REXLEX_TRACE_RULE,
+    REXLEX_TRACE
+)
+
+# Import lexer.
 from rexlex.lexer.lexer import Lexer
 from rexlex.lexer.tokentype import Token
 from rexlex.lexer.utils import include, bygroups, Rule
 from rexlex.lexer.exceptions import IncompleteLex
 
-
+# Import Scanner.
+from rexlex.scanner.scanner import ScannerLexer
 

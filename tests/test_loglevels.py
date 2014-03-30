@@ -8,6 +8,7 @@ import unittest
 
 from six import StringIO
 import rexlex.log_config
+from rexlex import lexer
 
 
 logger = logging.getLogger('rexlex')

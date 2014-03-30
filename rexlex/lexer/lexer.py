@@ -5,6 +5,7 @@ import functools
 
 from hercules import CachedClassAttr
 
+import rexlex
 from rexlex.config import LOG_MSG_MAXWIDTH
 from rexlex.lexer import tokendefs
 from rexlex.lexer import exceptions
@@ -30,6 +31,8 @@ class Lexer(object):
     trace_rule = _logger.rexlex_trace_rule
     trace = _logger.rexlex_trace
 
+    LOGLEVEL = None
+
     def __init__(self, text, pos=None, statestack=None, **kwargs):
         '''Text is the input string to lex. Pos is the
         position at which to start, or 0.
@@ -37,11 +40,23 @@ class Lexer(object):
         # Set initial state.
         self.text = text
         self.pos = pos or 0
-        self.statestack = statestack or []
+        self.statestack = statestack or ['root']
         self.Item = get_itemclass(text)
 
         if self.re_skip is not None:
             self.re_skip = re.compile(self.re_skip).match
+
+        if hasattr(self, 'DEBUG'):
+            if isinstance(self.DEBUG, bool):
+                self._logger.setLevel(rexlex.REXLEX_TRACE)
+            else:
+                self._logger.setLevel(self.DEBUG)
+        else:
+            self.loglevel = getattr(self, 'loglevel', None)
+            if self.loglevel is None:
+                self.loglevel = kwargs.get('loglevel', None)
+            if self.loglevel is None:
+                self._logger.setLevel(10)
 
     def __iter__(self):
         self.trace_meta('Tokenizing text: %r' % self.text)
@@ -59,7 +74,7 @@ class Lexer(object):
             except self._Finished:
                 if text_len <= self.pos:
                     return
-                elif self.raise_incomplete:
+                elif getattr(self, 'raise_incomplete', False):
                     raise self._IncompleteLex()
                 else:
                     return
