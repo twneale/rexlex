@@ -12,3 +12,13 @@ class BogusIncludeError(Exception):
 class ConfigurationError(Exception):
     '''Raised is lexer is misconfigured.
     '''
+
+
+class Finished(Exception):
+    '''Raise when lexer reaches the end of input.
+    '''
+
+
+class MatchFound(Exception):
+    '''Breaks the lexer loop when a match is found.
+    '''

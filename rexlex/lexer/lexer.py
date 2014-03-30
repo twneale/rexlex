@@ -5,77 +5,30 @@ import functools
 
 from hercules import CachedClassAttr
 
-from tater.core.config import LOG_MSG_MAXWIDTH
-from tater.core.tokentype import _TokenType
+from rexlex.config import LOG_MSG_MAXWIDTH
+from rexlex.tokentype import _TokenType
 
-from tater.base.lexer import tokendefs
-from tater.base.lexer.utils import include, bygroups, Rule
-from tater.base.lexer.itemclass import get_itemclass
-from tater.base.lexer.exceptions import IncompleteLex
-
-
-
-__all__ = [
-    'Lexer', 'DebugLexer', 'include', 'bygroups',
-    'Rule', 'IncompleteLex']
+from rexlex.lexer import tokendefs
+from rexlex.lexer import exceptions
+from rexlex.lexer.utils import include, bygroups
+from rexlex.lexer.itemclass import get_itemclass
 
 
-class LexerBase(object):
-    '''Basic regex Lexer.
+class Lexer(object):
+    '''Basic regex lexer with optionally extremely noisy debug/trace output.
     '''
+    # Lexer exceptions.
+    _Finished = exceptions.Finished
+    _MatchFound = exceptions.MatchFound
+    _IncompleteLex = exceptions.IncompleteLex
 
-    def __init__(self, text, **kwargs):
-        '''Text is the input string to lex. Pos is the
-        position at which to start, or 0.
-        '''
-        pos = 0
-        statestack = ['root']
-        self.text = text
-
-        names = (
-            're_skip',
-            'raise_incomplete',
-            'dont_emit')
-        for name in names:
-            value = kwargs.get(name, getattr(self, name))
-            setattr(self, name, value)
-
-    def __iter__(self):
-        return self.lex()
-
-    @CachedClassAttr
-    def _tokendefs(self):
-        return tokendefs.Compiler(cls).compile_all()
-
-    @CachedAttr
-    def _item_cls(self):
-        return get_itemclass(self.text)
-
-    def lex(self):
-        pos = self.pos
-        text = self.text
-        statestack = self.statestack or ['root']
-        tokendefs = self._tokendefs
-        re_skip = self.re_skip
-        text_len = len(text)
-        dont_emit = self.dont_emit or []
-        raise_incomplete = self.raise_incomplete
-
-        if re_skip is not None:
-            re_skip = re.compile(re_skip).match
-
-
-
-class _DebugLexerBase(_LexerBase):
-    '''Extremely noisy debug version of the basic lexer.
-    '''
-    __metaclass__ = DebugLexerMeta
-
-    class _Finished(Exception):
-        pass
-
-    class _MatchFound(Exception):
-        pass
+    # Custom log functions.
+    _logger = logging.getLogger('rexlex')
+    trace_result = _logger.rexlex_trace_result
+    trace_meta = _logger.rexlex_trace_meta
+    trace_state = _logger.rexlex_trace_state
+    trace_rule = _logger.rexlex_trace_rule
+    trace = _logger.rexlex_trace
 
     def __init__(self, text, pos=None, statestack=None, **kwargs):
         '''Text is the input string to lex. Pos is the
@@ -91,7 +44,7 @@ class _DebugLexerBase(_LexerBase):
             self.re_skip = re.compile(self.re_skip).match
 
     def __iter__(self):
-        self.info('Tokenizing text: %r' % self.text)
+        self.trace_meta('Tokenizing text: %r' % self.text)
         text_len = len(self.text)
         Item = self.Item
         while True:
@@ -101,29 +54,30 @@ class _DebugLexerBase(_LexerBase):
             try:
                 for item in self.scan():
                     item = Item(*item)
-                    self.warn('  %r' % (item,))
+                    self.trace_result('  %r' % (item,))
                     yield item
-            except self._Finished:
+            except self.Finished:
                 if text_len <= self.pos:
                     return
                 elif self.raise_incomplete:
-                    raise IncompleteLex()
+                    raise self._IncompleteLex()
                 else:
                     return
 
+    @CachedClassAttr
+    def _tokendefs(self):
+        return tokendefs.Compiler(cls).compile_all()
+
     def scan(self):
-        # Get the tokendefs for the current state.
-        # self.warn('  scan: text: %s' % self.text)
-        # self.warn('  scan:        ' + (' ' * self.pos) + '^')
-        self.warn('  scan: %r' % self.text[self.pos:])
-        self.warn('  scan: pos = %r' % self.pos)
+        self.trace_meta('  scan: %r' % self.text[self.pos:])
+        self.trace_meta('  scan: pos = %r' % self.pos)
 
         try:
             defs = self._tokendefs[self.statestack[-1]]
-            self.info('  scan: state is %r' % self.statestack[-1])
+            self.trace_state('  scan: state is %r' % self.statestack[-1])
         except IndexError:
             defs = self._tokendefs['root']
-            self.info("  scan: state is 'root'")
+            self.trace_state("  scan: state is 'root'")
 
         dont_emit = getattr(self, 'dont_emit', [])
         try:
@@ -133,19 +87,19 @@ class _DebugLexerBase(_LexerBase):
                 else:
                     yield start, end, token
         except self._MatchFound:
-            self.debug('  _scan: match found--returning.')
+            self.trace('  _scan: match found--returning.')
             return
 
         msg = '  scan: match not found. Popping from %r.'
-        self.info(msg % self.statestack)
+        self.trace_state(msg % self.statestack)
         try:
             self.statestack.pop()
         except IndexError:
-            self.debug('All out of states to process.Stopping.')
+            self.trace_meta('All out of states to process.Stopping.')
             raise self._Finished()
 
         if not self.statestack:
-            self.debug('  scan: popping from root state; stopping.')
+            self.trace_state('  scan: popping from root state; stopping.')
             # We popped from the root state.
             raise self._Finished()
 
@@ -157,9 +111,9 @@ class _DebugLexerBase(_LexerBase):
     def _process_state(self, defs):
         if self.statestack:
             msg = ' _process_state: starting state %r'
-            self.critical(msg % self.statestack[-1])
+            self.trace_meta(msg % self.statestack[-1])
             msg = ' _process_state: stack: %r'
-            self.warn(msg % self.statestack)
+            self.trace_state(msg % self.statestack)
         for rule in defs:
             self.debug(' _process_state: starting rule %r' % (rule,))
             for item in self._process_rule(rule):
@@ -175,23 +129,23 @@ class _DebugLexerBase(_LexerBase):
             # in case they specify leading strippables.
             m = self.re_skip(self.text, self.pos)
             if m:
-                self.info('  _process_rule: skipped %r' % m.group())
+                self.trace_rule('  _process_rule: skipped %r' % m.group())
                 msg = '  _process_rule: advancing pos from %r to %r'
-                self.info(msg % (self.pos, m.end()))
+                self.trace_rule(msg % (self.pos, m.end()))
                 pos_changed = True
                 self.pos = m.end()
 
         for rgx in rgxs:
-            self.debug('  _process_rule: statestack: %r' % self.statestack)
+            self.trace_rule('  _process_rule: statestack: %r' % self.statestack)
             if pos_changed:
-                self.info('  _process_rule:        ' + (' ' * self.pos) + '^')
+                self.trace_rule('  _process_rule:        ' + (' ' * self.pos) + '^')
                 pos_changed = False
 
             m = rgx.match(self.text, self.pos)
-            self.debug('  _process_rule: trying regex %r' % rgx.pattern)
+            self.trace('  _process_rule: trying regex %r' % rgx.pattern)
             if m:
-                self.info('  _process_rule: match found: %s' % m.group())
-                self.info('  _process_rule: matched pattern: %r' % rgx.pattern)
+                self.trace_rule('  _process_rule: match found: %s' % m.group())
+                self.trace_rule('  _process_rule: matched pattern: %r' % rgx.pattern)
                 if isinstance(token, (_TokenType, basestring)):
                     start, end = m.span()
                     yield start, end, token
@@ -202,9 +156,9 @@ class _DebugLexerBase(_LexerBase):
                         yield pos, pos + len(text), token
 
                 msg = '  _process_rule: %r has length %r'
-                self.info(msg % (m.group(), len(m.group())))
+                self.trace_rule(msg % (m.group(), len(m.group())))
                 msg = '  _process_rule: advancing pos from %r to %r'
-                self.info(msg % (self.pos, m.end()))
+                self.trace_rule(msg % (self.pos, m.end()))
                 self.pos = m.end()
                 self._update_state(rule)
                 raise self._MatchFound()
@@ -216,28 +170,28 @@ class _DebugLexerBase(_LexerBase):
         # State transition
         if swap and not (push or pop):
             msg = '  _update_state: swapping current state for %r'
-            self.info(msg % statestack[-1])
+            self.trace_state(msg % statestack[-1])
             statestack.pop()
             statestack.append(swap)
         else:
             if pop:
                 if isinstance(pop, bool):
                     popped = statestack.pop()
-                    self.info('  _update_state: popped %r' % popped)
+                    self.trace_state('  _update_state: popped %r' % popped)
                 elif isinstance(pop, int):
-                    self.info('  _update_state: popping %r states' % pop)
+                    self.trace_state('  _update_state: popping %r states' % pop)
                     msg = '    _update_state: [%r] popped %r'
                     for i in range(pop):
                         popped = statestack.pop()
-                        self.info(msg % (i, popped))
+                        self.trace_state(msg % (i, popped))
 
                 # If it's a set, pop all that match.
                 elif isinstance(pop, set):
-                    self.info('  _update_state: popping all %r' % pop)
+                    self.trace_state('  _update_state: popping all %r' % pop)
                     msg = '    _update_state: popped %r'
                     while statestack[-1] in pop:
                         popped = statestack.pop()
-                        self.info(msg % (popped))
+                        self.trace_state(msg % (popped))
 
             if push:
                 self.info('  _update_state: pushing %r' % (push,))
@@ -251,10 +205,10 @@ class _DebugLexerBase(_LexerBase):
                     else:
                         statestack.append(push)
                 else:
-                    self.info('  _update_state: pushing all %r' % (push,))
+                    self.trace_state('  _update_state: pushing all %r' % (push,))
                     msg = '    _update_state: pushing %r'
                     for state in push:
-                        self.info(msg % state)
+                        self.trace_state(msg % state)
                         statestack.append(state)
 
 
