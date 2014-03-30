@@ -6,12 +6,12 @@ import functools
 from hercules import CachedClassAttr
 
 from rexlex.config import LOG_MSG_MAXWIDTH
-from rexlex.tokentype import _TokenType
-
 from rexlex.lexer import tokendefs
 from rexlex.lexer import exceptions
 from rexlex.lexer.utils import include, bygroups
 from rexlex.lexer.itemclass import get_itemclass
+from rexlex.lexer.tokentype import _TokenType
+from rexlex.lexer.py2compat import str, unicode, bytes, basestring
 
 
 class Lexer(object):
@@ -56,7 +56,7 @@ class Lexer(object):
                     item = Item(*item)
                     self.trace_result('  %r' % (item,))
                     yield item
-            except self.Finished:
+            except self._Finished:
                 if text_len <= self.pos:
                     return
                 elif self.raise_incomplete:
@@ -65,7 +65,7 @@ class Lexer(object):
                     return
 
     @CachedClassAttr
-    def _tokendefs(self):
+    def _tokendefs(cls):
         return tokendefs.Compiler(cls).compile_all()
 
     def scan(self):
@@ -115,7 +115,7 @@ class Lexer(object):
             msg = ' _process_state: stack: %r'
             self.trace_state(msg % self.statestack)
         for rule in defs:
-            self.debug(' _process_state: starting rule %r' % (rule,))
+            self.trace_rule(' _process_state: starting rule %r' % (rule,))
             for item in self._process_rule(rule):
                 yield item
 
@@ -194,7 +194,7 @@ class Lexer(object):
                         self.trace_state(msg % (popped))
 
             if push:
-                self.info('  _update_state: pushing %r' % (push,))
+                self.trace_state('  _update_state: pushing %r' % (push,))
                 if isinstance(push, basestring):
                     if push == '#pop':
                         statestack.pop()

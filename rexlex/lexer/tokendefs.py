@@ -3,14 +3,16 @@ import functools
 from collections import defaultdict
 from operator import attrgetter
 
-from tater.base.lexer.utils import include, Rule
-from tater.base.lexer.exceptions import BogusIncludeError
+from rexlex.lexer.utils import include, Rule
+from rexlex.lexer.exceptions import BogusIncludeError
+from rexlex.lexer.py2compat import str, unicode, bytes, basestring
 
 
 class _BaseCompiler(object):
     _re_type = type(re.compile(''))
+
     def _process_re_type(self, rgx):
-        return rgx.match
+        return rgx
 
     def __init__(self, cls):
         self.cls = cls
@@ -25,7 +27,7 @@ class _BaseCompiler(object):
         rubberstamp = lambda s: s
         re_compile = functools.partial(self.re_compile, flags)
         getfunc = {
-            unicode: re_compile,
+            type(u""): re_compile,
             str: re_compile,
             self._re_type: self._process_re_type
             }
@@ -77,5 +79,6 @@ class _BaseCompiler(object):
 
 
 class Compiler(_BaseCompiler):
+
     def re_compile(self, flags, text, re_compile=re.compile):
-        return re.compile(text, flags).match
+        return re.compile(text, flags)

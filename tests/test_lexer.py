@@ -36,5 +36,5 @@ class TupleTransTest(unittest.TestCase):
         Item(start=4, end=5, token='Root')]
 
     def test(self):
-        toks = list(TestLexer(self.text))
+        toks = list(TestableLexer(self.text))
         self.assertEqual(toks, self.expected)
