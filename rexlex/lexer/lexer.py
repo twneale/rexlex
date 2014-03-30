@@ -210,6 +210,3 @@ class Lexer(object):
                     for state in push:
                         self.trace_state(msg % state)
                         statestack.append(state)
-
-
-
