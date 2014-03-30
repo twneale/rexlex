@@ -14,20 +14,21 @@ VERSION = (0, 0, 2, '')
 __version__ = '.'.join(str(p) for p in VERSION[0:3]) + ''.join(VERSION[3:])
 __author__ = 'Thom Neale'
 __contact__ = 'twneale@gmail.com'
-__homepage__ = 'http://twneale.github.io/tater'
+__homepage__ = 'http://github.com/twneale/rexlex'
 __docformat__ = 'restructuredtext'
 __all__ = [
     'Lexer', 'Scanner', 'Token', 'include', 'bygroups', 'Rule',
     '__version__']
 
 
+# Configure logging.
+logging.config.dictConfig(config.LOGGING_CONFIG)
+
 # rexlex imports.
 from rexlex.lexer.lexer import Lexer
 from rexlex.lexer.tokentype import Token
-from rexlex.lexer.utils import include, bygroups, rule
+from rexlex.lexer.utils import include, bygroups, Rule
 from rexlex.lexer.exceptions import IncompleteLex
 
 
-# Configure logging.
-logging.config.dictConfig(config.LOGGING_CONFIG)
 
