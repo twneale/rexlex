@@ -35,8 +35,7 @@ class TestableScannerLexer(ScannerLexer):
         yield 'a'
 
 
-
-class TupleTransTest(unittest.TestCase):
+class ScannerLexerTest(unittest.TestCase):
     text = 'xabcdexabcdex'
     Item = get_itemclass(text)
     maxDiff = None
