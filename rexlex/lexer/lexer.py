@@ -15,9 +15,15 @@ from rexlex.lexer.tokentype import _TokenType
 from rexlex.lexer.py2compat import str, unicode, bytes, basestring
 
 
+class _LogMessages:
+    pass
+
+
 class Lexer(object):
     '''Basic regex lexer with optionally extremely noisy debug/trace output.
     '''
+    _log_messages = _msg = _LogMessages()
+
     # Lexer exceptions.
     _Finished = exceptions.Finished
     _MatchFound = exceptions.MatchFound
@@ -32,6 +38,7 @@ class Lexer(object):
     trace = _logger.rexlex_trace
 
     LOGLEVEL = None
+    _log_messages = {}
 
     def __init__(self, text, pos=None, statestack=None, **kwargs):
         '''Text is the input string to lex. Pos is the
@@ -58,10 +65,13 @@ class Lexer(object):
             if self.loglevel is None:
                 self._logger.setLevel(10)
 
+    _msg.ITEM = '  %r'
+
     def __iter__(self):
-        self.trace_meta('Tokenizing text: %r' % self.text)
+        self.trace_meta('Tokenizing text: %r', self.text)
         text_len = len(self.text)
         Item = self.Item
+        msg = self._msg
         while True:
             if text_len <= self.pos:
                 # If here, we hit the end of the input. Stop.
@@ -69,7 +79,7 @@ class Lexer(object):
             try:
                 for item in self.scan():
                     item = Item(*item)
-                    self.trace_result('  %r' % (item,))
+                    self.trace_result(msg.ITEM,  (item,))
                     yield item
             except self._Finished:
                 if text_len <= self.pos:
@@ -83,16 +93,26 @@ class Lexer(object):
     def _tokendefs(cls):
         return tokendefs.Compiler(cls).compile_all()
 
+    _msg.SCAN_TEXT = '  scan: %r'
+    _msg.SCAN_POS = '  scan: pos = %r'
+    _msg.SCAN_STATE = '  scan: state is %r'
+    _msg.SCAN_ROOTSTATE = "  scan: state is 'root'"
+    _msg.SCAN_MATCH_FOUND = '  _scan: match found--returning.'
+    _msg.SCAN_POPPING = '  scan: match not found. Popping from %r.'
+    _msg.SCAN_STATES_EXHAUSTED = 'All out of states to process. Stopping.'
+    _msg.SCAN_POPPING_ROOT = '  scan: popping from root state; stopping.'
+
     def scan(self):
-        self.trace_meta('  scan: %r' % self.text[self.pos:])
-        self.trace_meta('  scan: pos = %r' % self.pos)
+        msg = self._msg
+        self.trace_meta(msg.SCAN_TEXT, self.text[self.pos:])
+        self.trace_meta(msg.SCAN_POS, self.pos)
 
         try:
             defs = self._tokendefs[self.statestack[-1]]
-            self.trace_state('  scan: state is %r' % self.statestack[-1])
+            self.trace_state(msg.SCAN_STATE, self.statestack[-1])
         except IndexError:
             defs = self._tokendefs['root']
-            self.trace_state("  scan: state is 'root'")
+            self.trace_state(msg.SCAN_ROOTSTATE)
 
         dont_emit = getattr(self, 'dont_emit', [])
         try:
@@ -102,41 +122,46 @@ class Lexer(object):
                 else:
                     yield start, end, token
         except self._MatchFound:
-            self.trace('  _scan: match found--returning.')
+            self.trace(msg.SCAN_MATCH_FOUND)
             return
 
-        msg = '  scan: match not found. Popping from %r.'
-        self.trace_state(msg % self.statestack)
+        self.trace_state(msg.SCAN_POPPING, self.statestack)
         try:
             self.statestack.pop()
         except IndexError:
-            self.trace_meta('All out of states to process.Stopping.')
+            self.trace_meta(msg.SCAN_STATES_EXHAUSTED)
             raise self._Finished()
 
         if not self.statestack:
-            self.trace_state('  scan: popping from root state; stopping.')
+            self.trace_state(msg.SCAN_POPPING_ROOT)
             # We popped from the root state.
             raise self._Finished()
 
-        # # Advance 1 chr if we tried all the states on the stack.
-        # if not self.statestack:
-        #     self.info('  scan: advancing 1 char.')
-        #     self.pos += 1
+    _msg.STATE_STARTING = ' _process_state: starting state %r'
+    _msg.STATE_STACK = ' _process_state: stack: %r'
 
     def _process_state(self, defs):
+        msg = self._msg
         if self.statestack:
-            msg = ' _process_state: starting state %r'
-            self.trace_meta(msg % self.statestack[-1])
-            msg = ' _process_state: stack: %r'
-            self.trace_state(msg % self.statestack)
+            self.trace_meta(msg.STATE_STARTING, self.statestack[-1])
+            self.trace_state(msg.STATE_STACK, self.statestack)
         for rule in defs:
-            self.trace_rule(' _process_state: starting rule %r' % (rule,))
             for item in self._process_rule(rule):
                 yield item
 
-    def _process_rule(self, rule):
-        token, rgxs, push, pop, swap = rule
+    _msg.PROCESS_RULE_SKIPPED = '  _process_rule: skipped %r'
+    _msg.PROCESS_RULE_ADVANCING = '  _process_rule: advancing pos from %r to %r'
+    _msg.PROCESS_RULE_STATESTACK = '  _process_rule: statestack: %r'
+    _msg.PROCESS_RULE_TRYING_REGEX = '  _process_rule: trying regex %r'
+    _msg.PROCESS_RULE_MATCH_FOUND = '  _process_rule: match found: %s'
+    _msg.PROCESS_RULE_MATCHED_PATTERN = '  _process_rule: matched pattern: %r'
+    _msg.PROCESS_RULE_MATCH_LENGTH = '  _process_rule: %r has length %r'
+    _msg.PROCESS_RULE_ADVANCING = '  _process_rule: advancing pos from %r to %r'
+    _msg.PROCESS_RULE_ADVANCING = '  _process_rule: advancing pos from %r to %r'
 
+    def _process_rule(self, rule):
+        msg = self._msg
+        token, rgxs, push, pop, swap = rule
         pos_changed = False
         if self.re_skip:
             # Skipper.
@@ -144,23 +169,25 @@ class Lexer(object):
             # in case they specify leading strippables.
             m = self.re_skip(self.text, self.pos)
             if m:
-                self.trace_rule('  _process_rule: skipped %r' % m.group())
-                msg = '  _process_rule: advancing pos from %r to %r'
-                self.trace_rule(msg % (self.pos, m.end()))
+                self.trace_rule(msg.PROCESS_RULE_SKIPPED, m.group())
+                self.trace_rule(msg.PROCESS_RULE_ADVANCING, (self.pos, m.end()))
                 pos_changed = True
                 self.pos = m.end()
 
-        for rgx in rgxs:
-            self.trace_rule('  _process_rule: statestack: %r' % self.statestack)
-            if pos_changed:
-                self.trace_rule('  _process_rule:        ' + (' ' * self.pos) + '^')
-                pos_changed = False
+        PROCESS_RULE_STATESTACK = self._msg.PROCESS_RULE_STATESTACK
+        PROCESS_RULE_TRYING_REGEX = self._msg.PROCESS_RULE_TRYING_REGEX
+        PROCESS_RULE_MATCH_FOUND = self._msg.PROCESS_RULE_MATCH_FOUND
+        PROCESS_RULE_MATCHED_PATTERN = self._msg.PROCESS_RULE_MATCHED_PATTERN
+        PROCESS_RULE_MATCH_LENGTH = self._msg.PROCESS_RULE_MATCH_LENGTH
+        PROCESS_RULE_ADVANCING = self._msg.PROCESS_RULE_ADVANCING
 
+        for rgx in rgxs:
+            self.trace_rule(PROCESS_RULE_STATESTACK, self.statestack)
             m = rgx.match(self.text, self.pos)
-            self.trace('  _process_rule: trying regex %r' % rgx.pattern)
+            self.trace(PROCESS_RULE_TRYING_REGEX, rgx.pattern)
             if m:
-                self.trace_rule('  _process_rule: match found: %s' % m.group())
-                self.trace_rule('  _process_rule: matched pattern: %r' % rgx.pattern)
+                self.trace_rule(PROCESS_RULE_MATCH_FOUND, m.group())
+                self.trace_rule(PROCESS_RULE_MATCHED_PATTERN, rgx.pattern)
                 if isinstance(token, (_TokenType, basestring)):
                     start, end = m.span()
                     yield start, end, token
@@ -170,46 +197,52 @@ class Lexer(object):
                         pos = self.pos + matched.index(text)
                         yield pos, pos + len(text), token
 
-                msg = '  _process_rule: %r has length %r'
-                self.trace_rule(msg % (m.group(), len(m.group())))
-                msg = '  _process_rule: advancing pos from %r to %r'
-                self.trace_rule(msg % (self.pos, m.end()))
+                msg = PROCESS_RULE_MATCH_LENGTH
+                self.trace_rule(msg, (m.group(), len(m.group())))
+                msg = PROCESS_RULE_ADVANCING
+                self.trace_rule(msg, (self.pos, m.end()))
                 self.pos = m.end()
                 self._update_state(rule)
                 raise self._MatchFound()
 
+    _msg.UPDATE_SWAPPING = '  _update_state: swapping current state for %r'
+    _msg.UPDATE_POPPED = '  _update_state: popped %r'
+    _msg.UPDATE_POPPED_MULTI = '  _update_state: popping %r states'
+    _msg.UPDATE_POP_ALL = '  _update_state: popping all %r'
+    _msg.UPDATE_PUSH = '  _update_state: pushing %r'
+    _msg.UPDATE_PUSH_ALL = '  _update_state: pushing all %r'
+
     def _update_state(self, rule):
+        msg = self._msg
         token, rgxs, push, pop, swap = rule
         statestack = self.statestack
 
         # State transition
         if swap and not (push or pop):
-            msg = '  _update_state: swapping current state for %r'
-            self.trace_state(msg % statestack[-1])
+            msg = self._msg.UPDATE_SWAPPING
+            self.trace_state(msg, statestack[-1])
             statestack.pop()
             statestack.append(swap)
         else:
             if pop:
                 if isinstance(pop, bool):
                     popped = statestack.pop()
-                    self.trace_state('  _update_state: popped %r' % popped)
+                    self.trace_state(msg.UPDATE_POPPED, popped)
                 elif isinstance(pop, int):
-                    self.trace_state('  _update_state: popping %r states' % pop)
-                    msg = '    _update_state: [%r] popped %r'
+                    self.trace_state(msg.UPDATE_POPPED_MULTI, pop)
                     for i in range(pop):
                         popped = statestack.pop()
-                        self.trace_state(msg % (i, popped))
+                        self.trace_state(msg.UPDATE_POPPED, popped)
 
                 # If it's a set, pop all that match.
                 elif isinstance(pop, set):
-                    self.trace_state('  _update_state: popping all %r' % pop)
-                    msg = '    _update_state: popped %r'
+                    self.trace_state(msg.UPDATE_POP_ALL, pop)
                     while statestack[-1] in pop:
                         popped = statestack.pop()
-                        self.trace_state(msg % (popped))
+                        self.trace_state(msg.UPDATE_POPPED, (popped))
 
             if push:
-                self.trace_state('  _update_state: pushing %r' % (push,))
+                self.trace_state(msg.UPDATE_PUSH, (push,))
                 if isinstance(push, basestring):
                     if push == '#pop':
                         statestack.pop()
@@ -220,8 +253,7 @@ class Lexer(object):
                     else:
                         statestack.append(push)
                 else:
-                    self.trace_state('  _update_state: pushing all %r' % (push,))
-                    msg = '    _update_state: pushing %r'
+                    self.trace_state(msg.UPDATE_PUSH_ALL, (push,))
                     for state in push:
-                        self.trace_state(msg % state)
+                        self.trace_state(msg.UPDATE_PUSH, state)
                         statestack.append(state)
