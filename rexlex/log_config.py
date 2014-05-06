@@ -2,6 +2,7 @@
 Establish custom log levels for rexlexer's verbose output.
 '''
 import logging
+from .config import LOG_MSG_MAXWIDTH
 
 
 # ---------------------------------------------------------------------------
@@ -34,28 +35,39 @@ REXLEX_LOG_LEVELS = (
 for loglevel, loglevel_name, method_name in REXLEX_LOG_LEVELS:
     logging.addLevelName(loglevel, loglevel_name)
 
+def truncate_msg(msg, width=LOG_MSG_MAXWIDTH):
+    len_msg = len(msg)
+    if width < len_msg:
+        msg = '%s...{%d chrs omitted}' % (msg[:width], len_msg - width)
+    return msg
+
 def rexlex_trace_result(self, message, *args, **kws):
     if self.isEnabledFor(REXLEX_TRACE_RESULT):
+        message = truncate_msg(message)
         self._log(REXLEX_TRACE_RESULT, message, args, **kws)
 setattr(logging.Logger, 'rexlex_trace_result', rexlex_trace_result)
 
 def rexlex_trace_meta(self, message, *args, **kws):
     if self.isEnabledFor(REXLEX_TRACE_META):
+        message = truncate_msg(message)
         self._log(REXLEX_TRACE_META, message, args, **kws)
 setattr(logging.Logger, 'rexlex_trace_meta', rexlex_trace_meta)
 
 def rexlex_trace_state(self, message, *args, **kws):
     if self.isEnabledFor(REXLEX_TRACE_STATE):
+        message = truncate_msg(message)
         self._log(REXLEX_TRACE_STATE, message, args, **kws)
 setattr(logging.Logger, 'rexlex_trace_state', rexlex_trace_state)
 
 def rexlex_trace_rule(self, message, *args, **kws):
     if self.isEnabledFor(REXLEX_TRACE_RULE):
+        message = truncate_msg(message)
         self._log(REXLEX_TRACE_RULE, message, args, **kws)
 setattr(logging.Logger, 'rexlex_trace_rule', rexlex_trace_rule)
 
 def rexlex_trace(self, message, *args, **kws):
     if self.isEnabledFor(REXLEX_TRACE):
+        message = truncate_msg(message)
         self._log(REXLEX_TRACE, message, args, **kws)
 setattr(logging.Logger, 'rexlex_trace', rexlex_trace)
 

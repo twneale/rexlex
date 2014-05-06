@@ -1,7 +1,7 @@
 import logging
 
 
-LOG_MSG_MAXWIDTH = 300
+LOG_MSG_MAXWIDTH = 1000
 
 # ---------------------------------------------------------------------------
 # Configure logging module.
