@@ -23,6 +23,7 @@ class Lexer(object):
     '''Basic regex lexer with optionally extremely noisy debug/trace output.
     '''
     _log_messages = _msg = _LogMessages()
+    _MAXWIDTH = LOG_MSG_MAXWIDTH
 
     # Lexer exceptions.
     _Finished = exceptions.Finished
@@ -104,7 +105,7 @@ class Lexer(object):
 
     def scan(self):
         msg = self._msg
-        self.trace_meta(msg.SCAN_TEXT, self.text[self.pos:])
+        self.trace_meta(msg.SCAN_TEXT, self.text[self.pos:(self.pos + self._MAXWIDTH)])
         self.trace_meta(msg.SCAN_POS, self.pos)
 
         try:
