@@ -17,7 +17,7 @@ __contact__ = 'twneale@gmail.com'
 __homepage__ = 'http://github.com/twneale/rexlex'
 __docformat__ = 'restructuredtext'
 __all__ = [
-    'Lexer', 'Scanner', 'Token', 'include', 'bygroups', 'Rule',
+    'Lexer', 'Token', 'include', 'bygroups', 'Rule',
     'ScannerLexer', 'IncompleteLex',
     'TRACE', 'TRACE_RESULT', 'TRACE_META', 'TRACE_STATE',
     'TRACE_RULE', '__version__']
