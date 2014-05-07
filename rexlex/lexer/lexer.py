@@ -157,8 +157,6 @@ class Lexer(object):
     _msg.PROCESS_RULE_MATCH_FOUND = '  _process_rule: match found: %s'
     _msg.PROCESS_RULE_MATCHED_PATTERN = '  _process_rule: matched pattern: %r'
     _msg.PROCESS_RULE_MATCH_LENGTH = '  _process_rule: %r has length %r'
-    _msg.PROCESS_RULE_ADVANCING = '  _process_rule: advancing pos from %r to %r'
-    _msg.PROCESS_RULE_ADVANCING = '  _process_rule: advancing pos from %r to %r'
 
     def _process_rule(self, rule):
         msg = self._msg
@@ -171,7 +169,7 @@ class Lexer(object):
             m = self.re_skip(self.text, self.pos)
             if m:
                 self.trace_rule(msg.PROCESS_RULE_SKIPPED, m.group())
-                self.trace_rule(msg.PROCESS_RULE_ADVANCING, (self.pos, m.end()))
+                self.trace_rule(msg.PROCESS_RULE_ADVANCING, self.pos, m.end())
                 pos_changed = True
                 self.pos = m.end()
 
@@ -199,9 +197,9 @@ class Lexer(object):
                         yield pos, pos + len(text), token
 
                 msg = PROCESS_RULE_MATCH_LENGTH
-                self.trace_rule(msg, (m.group(), len(m.group())))
+                self.trace_rule(msg, m.group(), len(m.group()))
                 msg = PROCESS_RULE_ADVANCING
-                self.trace_rule(msg, (self.pos, m.end()))
+                self.trace_rule(msg, self.pos, m.end())
                 self.pos = m.end()
                 self._update_state(rule)
                 raise self._MatchFound()
