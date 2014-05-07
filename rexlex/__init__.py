@@ -18,7 +18,9 @@ __homepage__ = 'http://github.com/twneale/rexlex'
 __docformat__ = 'restructuredtext'
 __all__ = [
     'Lexer', 'Scanner', 'Token', 'include', 'bygroups', 'Rule',
-    '__version__']
+    'ScannerLexer', 'IncompleteLex',
+    'TRACE', 'TRACE_RESULT', 'TRACE_META', 'TRACE_STATE',
+    'TRACE_RULE', '__version__']
 
 
 # Configure logging.
@@ -26,11 +28,11 @@ logging.config.dictConfig(config.LOGGING_CONFIG)
 
 # Import cumstom log levels.
 from rexlex.log_config import (
-    REXLEX_TRACE_RESULT,
-    REXLEX_TRACE_META,
-    REXLEX_TRACE_STATE,
-    REXLEX_TRACE_RULE,
-    REXLEX_TRACE
+    REXLEX_TRACE_RESULT as TRACE_RESULT,
+    REXLEX_TRACE_META as TRACE_META,
+    REXLEX_TRACE_STATE as TRACE_STATE,
+    REXLEX_TRACE_RULE as TRACE_RULE,
+    REXLEX_TRACE as TRACE,
 )
 
 # Import lexer.
