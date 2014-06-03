@@ -6,7 +6,7 @@ long_description = """Basic regular expression lexer implementation.
 """
 
 appname = "rexlex"
-version = "0.00"
+version = "0.01"
 
 setup(**{
     "name": appname,
