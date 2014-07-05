@@ -31,6 +31,10 @@ from rexlex import IncompleteLex
 __all__ = ["Scanner"]
 
 
+class ScannerContinue:
+    '''Continue in scanner's loop.
+    '''
+
 class ScannerLexer(object):
     '''This object tries uses the hook functions defined
     in get_hooks to find points within the input string
@@ -47,6 +51,8 @@ class ScannerLexer(object):
     # scanner match objects.
     skip_match = False
 
+    Continue = ScannerContinue
+
     def get_hooks(self):
         '''Yields a regex used to find positions in the input string
         to begin lexing from.
@@ -62,7 +68,8 @@ class ScannerLexer(object):
         self.text = text
         self.pos = pos
         self.lexer = self.lexer or lexer
-        self.lexer.raise_incomplete = False
+        if hasattr(self.lexer, 'raise_incomplete'):
+            self.lexer.raise_incomplete = False
         self.hooks = self.hooks or list(self.get_hooks())
 
     def __iter__(self):
@@ -74,7 +81,10 @@ class ScannerLexer(object):
             items = list(self.get_tokens(matchobj))
             if items is None:
                 continue
-            start, end = self.get_span(items)
+            try:
+                start, end = self.get_span(items)
+            except self.Continue():
+                continue
             self.pos = end
             yield items
 
