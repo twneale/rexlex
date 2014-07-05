@@ -53,7 +53,8 @@ class Lexer(object):
 
         re_skip = getattr(self, 're_skip', None)
         if re_skip is not None:
-            self.re_skip = re.compile(re_skip).match
+            re_skip = re.compile(re_skip).match
+        self.re_skip = re_skip
 
         if hasattr(self, 'DEBUG'):
             if isinstance(self.DEBUG, bool):
