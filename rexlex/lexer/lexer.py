@@ -51,8 +51,9 @@ class Lexer(object):
         self.statestack = statestack or ['root']
         self.Item = get_itemclass(text)
 
-        if self.re_skip is not None:
-            self.re_skip = re.compile(self.re_skip).match
+        re_skip = getattr(self, 're_skip', None)
+        if re_skip is not None:
+            self.re_skip = re.compile(re_skip).match
 
         if hasattr(self, 'DEBUG'):
             if isinstance(self.DEBUG, bool):
