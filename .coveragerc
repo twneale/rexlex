@@ -1,2 +1,2 @@
 [run]
-omit = tests/*, treebie/log_config.py
+omit = tests/*
