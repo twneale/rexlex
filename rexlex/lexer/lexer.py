@@ -58,7 +58,7 @@ class Lexer(object):
 
         if hasattr(self, 'DEBUG'):
             if isinstance(self.DEBUG, bool):
-                self._logger.setLevel(rexlex.REXLEX_TRACE)
+                self._logger.setLevel(rexlex.TRACE)
             else:
                 self._logger.setLevel(self.DEBUG)
         else:

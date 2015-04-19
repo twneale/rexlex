@@ -108,7 +108,7 @@ class ScannerLexer(object):
     def get_span(self, tokens):
         return tokens[0].start, tokens[-1].end
 
-    def handle_parse_error(self, start_node, exc):
+    def handle_lex_error(self, start_node, exc):
         raise exc
 
     def get_tokens(self, matchobj):
@@ -119,7 +119,7 @@ class ScannerLexer(object):
         try:
             items = self.lexer(self.text, pos=start_pos)
         except IncomepleteLex as exc:
-            self.handle_parse_error(start, exc)
+            self.handle_lex_error(start, exc)
 
         return items
 
