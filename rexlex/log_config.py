@@ -2,7 +2,7 @@
 Establish custom log levels for rexlexer's verbose output.
 '''
 import logging
-from .config import LOG_MSG_MAXWIDTH
+from rexlex.config import LOG_MSG_MAXWIDTH
 
 
 # ---------------------------------------------------------------------------
