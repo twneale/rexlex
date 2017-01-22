@@ -1,7 +1,7 @@
 from operator import itemgetter
 from collections import OrderedDict
 
-from hercules import CachedAttr
+from rexlex.utils.cachedattr import CachedAttr
 
 
 class _ItemBase(tuple):

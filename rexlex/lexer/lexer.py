@@ -3,8 +3,6 @@ import sys
 import logging
 import functools
 
-from hercules import CachedClassAttr
-
 import rexlex
 from rexlex.config import LOG_MSG_MAXWIDTH
 from rexlex.lexer import tokendefs
@@ -13,6 +11,7 @@ from rexlex.lexer.utils import include, bygroups
 from rexlex.lexer.itemclass import get_itemclass
 from rexlex.lexer.tokentype import _TokenType
 from rexlex.lexer.py2compat import str, unicode, bytes, basestring
+from rexlex.utils.cachedattr import CachedClassAttr
 
 
 class _LogMessages:
